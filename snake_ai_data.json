@@ -1,0 +1,32 @@
+{
+  "games_played": 2,
+  "avg_score": 10.0,
+  "avg_game_time": 3.9019875,
+  "movement_patterns": [
+    [],
+    [
+      "up",
+      "right",
+      "down",
+      "left",
+      "left",
+      "down",
+      "left",
+      "left",
+      "down",
+      "down"
+    ]
+  ],
+  "death_causes": {
+    "wall": 2,
+    "self": 0
+  },
+  "preferred_directions": {
+    "up": 1,
+    "down": 4,
+    "left": 4,
+    "right": 1
+  },
+  "reaction_times": [],
+  "skill_level": "beginner"
+}

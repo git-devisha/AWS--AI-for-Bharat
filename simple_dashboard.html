@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🌞₿ Crypto vs Solar Activity Dashboard</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            color: #4a5568;
+            margin-bottom: 10px;
+        }
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .metric-card {
+            background: #f7fafc;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            border-left: 4px solid #4299e1;
+        }
+        .metric-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #2d3748;
+        }
+        .metric-label {
+            color: #718096;
+            margin-top: 5px;
+        }
+        .chart-container {
+            margin: 30px 0;
+            background: #f7fafc;
+            padding: 20px;
+            border-radius: 10px;
+        }
+        .loading {
+            text-align: center;
+            padding: 50px;
+            color: #718096;
+        }
+        .correlation-panel {
+            background: #edf2f7;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+        .insight {
+            background: #e6fffa;
+            border-left: 4px solid #38b2ac;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .refresh-btn {
+            background: #4299e1;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .refresh-btn:hover {
+            background: #3182ce;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🌞₿ Crypto vs Solar Activity Dashboard</h1>
+            <p><em>Exploring the cosmic connection between cryptocurrency and space weather</em></p>
+            <button class="refresh-btn" onclick="loadData()">🔄 Refresh Data</button>
+        </div>
+
+        <div class="metrics" id="metrics">
+            <div class="loading">Loading metrics...</div>
+        </div>
+
+        <div class="chart-container">
+            <h3>📈 Bitcoin Price Movement</h3>
+            <div id="bitcoin-chart" style="height: 400px;"></div>
+        </div>
+
+        <div class="chart-container">
+            <h3>🌊 Bitcoin vs Solar Wind Speed</h3>
+            <div id="correlation-chart" style="height: 400px;"></div>
+        </div>
+
+        <div class="correlation-panel">
+            <h3>🔗 Correlation Analysis</h3>
+            <div id="correlation-results">
+                <div class="loading">Calculating correlations...</div>
+            </div>
+        </div>
+
+        <div class="correlation-panel">
+            <h3>🧠 Insights</h3>
+            <div class="insight">🌞 Solar wind speed varies from 300-800 km/s normally</div>
+            <div class="insight">₿ Bitcoin volatility might be more earthly than cosmic</div>
+            <div class="insight">🔬 Correlation ≠ causation (but it's fun to explore!)</div>
+            <div id="dynamic-insights"></div>
+        </div>
+    </div>
+
+    <script>
+        let bitcoinData = null;
+        let solarData = null;
+
+        async function fetchBitcoinData() {
+            try {
+                const response = await fetch('https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=usd&days=30&interval=daily');
+                const data = await response.json();
+                
+                return data.prices.map(([timestamp, price]) => ({
+                    date: new Date(timestamp),
+                    price: price
+                }));
+            } catch (error) {
+                console.error('Error fetching Bitcoin data:', error);
+                return generateMockBitcoinData();
+            }
+        }
+
+        function generateMockBitcoinData() {
+            const data = [];
+            const basePrice = 45000;
+            const now = new Date();
+            
+            for (let i = 29; i >= 0; i--) {
+                const date = new Date(now);
+                date.setDate(date.getDate() - i);
+                
+                const volatility = (Math.random() - 0.5) * 0.1;
+                const price = basePrice * (1 + volatility + Math.sin(i * 0.2) * 0.05);
+                
+                data.push({ date, price });
+            }
+            
+            return data;
+        }
+
+        function generateMockSolarData() {
+            const data = [];
+            const now = new Date();
+            
+            for (let i = 29; i >= 0; i--) {
+                const date = new Date(now);
+                date.setDate(date.getDate() - i);
+                
+                const speed = 400 + Math.random() * 200 + Math.sin(i * 0.3) * 100;
+                const density = 8 + Math.random() * 6;
+                const temperature = 100000 + Math.random() * 100000;
+                
+                data.push({ date, speed, density, temperature });
+            }
+            
+            return data;
+        }
+
+        function calculateCorrelation(x, y) {
+            const n = x.length;
+            const sumX = x.reduce((a, b) => a + b, 0);
+            const sumY = y.reduce((a, b) => a + b, 0);
+            const sumXY = x.reduce((sum, xi, i) => sum + xi * y[i], 0);
+            const sumX2 = x.reduce((sum, xi) => sum + xi * xi, 0);
+            const sumY2 = y.reduce((sum, yi) => sum + yi * yi, 0);
+            
+            const correlation = (n * sumXY - sumX * sumY) / 
+                Math.sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY));
+            
+            return correlation;
+        }
+
+        function updateMetrics() {
+            if (!bitcoinData || !solarData) return;
+            
+            const currentPrice = bitcoinData[bitcoinData.length - 1].price;
+            const previousPrice = bitcoinData[bitcoinData.length - 2].price;
+            const priceChange = ((currentPrice - previousPrice) / previousPrice * 100);
+            
+            const currentSolar = solarData[solarData.length - 1];
+            
+            const metricsHtml = `
+                <div class="metric-card">
+                    <div class="metric-value">$${currentPrice.toLocaleString('en-US', {maximumFractionDigits: 0})}</div>
+                    <div class="metric-label">Bitcoin Price</div>
+                    <div style="color: ${priceChange >= 0 ? 'green' : 'red'};">
+                        ${priceChange >= 0 ? '+' : ''}${priceChange.toFixed(2)}%
+                    </div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value">${currentSolar.speed.toFixed(0)}</div>
+                    <div class="metric-label">Solar Wind Speed (km/s)</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value">${currentSolar.density.toFixed(1)}</div>
+                    <div class="metric-label">Solar Wind Density (p/cm³)</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value">${currentSolar.speed > 600 ? 'High' : currentSolar.speed > 450 ? 'Moderate' : 'Low'}</div>
+                    <div class="metric-label">Solar Activity Level</div>
+                </div>
+            `;
+            
+            document.getElementById('metrics').innerHTML = metricsHtml;
+        }
+
+        function createBitcoinChart() {
+            if (!bitcoinData) return;
+            
+            const trace = {
+                x: bitcoinData.map(d => d.date),
+                y: bitcoinData.map(d => d.price),
+                type: 'scatter',
+                mode: 'lines',
+                name: 'Bitcoin Price',
+                line: { color: '#f7931a', width: 3 }
+            };
+            
+            const layout = {
+                title: 'Bitcoin Price (USD)',
+                xaxis: { title: 'Date' },
+                yaxis: { title: 'Price (USD)' },
+                showlegend: false,
+                plot_bgcolor: 'rgba(0,0,0,0)',
+                paper_bgcolor: 'rgba(0,0,0,0)'
+            };
+            
+            Plotly.newPlot('bitcoin-chart', [trace], layout, {responsive: true});
+        }
+
+        function createCorrelationChart() {
+            if (!bitcoinData || !solarData) return;
+            
+            const trace1 = {
+                x: bitcoinData.map(d => d.date),
+                y: bitcoinData.map(d => d.price),
+                type: 'scatter',
+                mode: 'lines',
+                name: 'Bitcoin Price',
+                line: { color: '#f7931a' },
+                yaxis: 'y'
+            };
+            
+            const trace2 = {
+                x: solarData.map(d => d.date),
+                y: solarData.map(d => d.speed),
+                type: 'scatter',
+                mode: 'lines',
+                name: 'Solar Wind Speed',
+                line: { color: '#ff6b6b' },
+                yaxis: 'y2'
+            };
+            
+            const layout = {
+                title: 'Bitcoin Price vs Solar Wind Speed',
+                xaxis: { title: 'Date' },
+                yaxis: { 
+                    title: 'Bitcoin Price (USD)',
+                    side: 'left'
+                },
+                yaxis2: {
+                    title: 'Solar Wind Speed (km/s)',
+                    side: 'right',
+                    overlaying: 'y'
+                },
+                plot_bgcolor: 'rgba(0,0,0,0)',
+                paper_bgcolor: 'rgba(0,0,0,0)'
+            };
+            
+            Plotly.newPlot('correlation-chart', [trace1, trace2], layout, {responsive: true});
+        }
+
+        function updateCorrelationResults() {
+            if (!bitcoinData || !solarData) return;
+            
+            const prices = bitcoinData.map(d => d.price);
+            const speeds = solarData.map(d => d.speed);
+            const densities = solarData.map(d => d.density);
+            
+            const speedCorr = calculateCorrelation(prices, speeds);
+            const densityCorr = calculateCorrelation(prices, densities);
+            
+            const resultsHtml = `
+                <table style="width: 100%; border-collapse: collapse;">
+                    <tr style="background: #e2e8f0;">
+                        <th style="padding: 10px; text-align: left;">Solar Metric</th>
+                        <th style="padding: 10px; text-align: left;">Correlation</th>
+                        <th style="padding: 10px; text-align: left;">Strength</th>
+                    </tr>
+                    <tr>
+                        <td style="padding: 10px;">Solar Wind Speed</td>
+                        <td style="padding: 10px;">${speedCorr.toFixed(3)}</td>
+                        <td style="padding: 10px;">${Math.abs(speedCorr) > 0.3 ? 'Moderate' : 'Weak'}</td>
+                    </tr>
+                    <tr style="background: #f7fafc;">
+                        <td style="padding: 10px;">Solar Wind Density</td>
+                        <td style="padding: 10px;">${densityCorr.toFixed(3)}</td>
+                        <td style="padding: 10px;">${Math.abs(densityCorr) > 0.3 ? 'Moderate' : 'Weak'}</td>
+                    </tr>
+                </table>
+            `;
+            
+            document.getElementById('correlation-results').innerHTML = resultsHtml;
+            
+            // Add dynamic insight
+            const strongestCorr = Math.abs(speedCorr) > Math.abs(densityCorr) ? speedCorr : densityCorr;
+            const metric = Math.abs(speedCorr) > Math.abs(densityCorr) ? 'solar wind speed' : 'solar wind density';
+            
+            if (Math.abs(strongestCorr) > 0.3) {
+                const direction = strongestCorr > 0 ? 'positive' : 'negative';
+                document.getElementById('dynamic-insights').innerHTML = `
+                    <div class="insight">📈 Strongest correlation found with ${metric} (${direction}, r=${strongestCorr.toFixed(3)})</div>
+                `;
+            } else {
+                document.getElementById('dynamic-insights').innerHTML = `
+                    <div class="insight">📊 No strong correlations detected in current data</div>
+                `;
+            }
+        }
+
+        async function loadData() {
+            document.getElementById('metrics').innerHTML = '<div class="loading">Loading metrics...</div>';
+            document.getElementById('correlation-results').innerHTML = '<div class="loading">Calculating correlations...</div>';
+            
+            try {
+                bitcoinData = await fetchBitcoinData();
+                solarData = generateMockSolarData(); // Using mock data for demo
+                
+                updateMetrics();
+                createBitcoinChart();
+                createCorrelationChart();
+                updateCorrelationResults();
+            } catch (error) {
+                console.error('Error loading data:', error);
+            }
+        }
+
+        // Load data on page load
+        loadData();
+    </script>
+</body>
+</html>
